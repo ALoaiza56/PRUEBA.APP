@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="sidebar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/logoAM.png') }}" alt="Logo AM"
+                style="max-width: 100px; margin-bottom: 10px;">
+            <h2>SchoolApp</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard') }}#fechas">Volver al Dashboard</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1 id="page-title">Editar Fecha</h1>
+        </header>
+
+        <section class="tab-content active">
+            <div class="card">
+                <h3>Editar Fecha y Turno</h3>
+
+                <form action="{{ url_for('edit_school_date', id=school_date.id) }}" method="POST" class="add-form"
+                    style="display: flex; flex-direction: column; gap: 1rem; max-width: 500px;">
+                    <div class="input-group">
+                        <label>Fecha:</label>
+                        <input type="date" name="date" value="{{ school_date.date }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Turno:</label>
+                        <select name="shift" required>
+                            <option value="Mañana (10-12am)" {% if school_date.shift=='Mañana (10-12am)' %}selected{%
+                                endif %}>Mañana (10-12am)</option>
+                            <option value="Tarde 1 (2-4pm)" {% if school_date.shift=='Tarde 1 (2-4pm)' %}selected{%
+                                endif %}>Tarde 1 (2-4pm)</option>
+                            <option value="Tarde 2 (4-6pm)" {% if school_date.shift=='Tarde 2 (4-6pm)' %}selected{%
+                                endif %}>Tarde 2 (4-6pm)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <button type="submit" class="btn-primary">Guardar</button>
+                        <a href="{{ url_for('dashboard') }}#fechas" class="btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

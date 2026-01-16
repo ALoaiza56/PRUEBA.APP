@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="{{ url_for('static', filename='images/logoAM.png') }}" alt="Logo AM" style="max-width: 100px;">
+        </div>
+        <h1>Iniciar Sesión</h1>
+        <p class="auth-subtitle">Bienvenido de nuevo</p>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="input-group">
+                <input type="text" name="username" id="username" required placeholder="Usuario">
+            </div>
+
+            <div class="input-group">
+                <input type="password" name="password" id="password" required placeholder="Contraseña">
+            </div>
+
+            <button type="submit" class="btn-primary">Entrar</button>
+        </form>
+
+        <p class="auth-footer">
+            ¿No tienes cuenta? <a href="{{ url_for('register') }}">Regístrate aquí</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

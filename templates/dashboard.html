@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="sidebar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/logoAM.png') }}" alt="Logo AM"
+                style="max-width: 100px; margin-bottom: 10px;">
+            <h2>SchoolApp</h2>
+        </div>
+        <ul class="nav-links">
+            <!-- Calificaciones tab hidden
+            <li class="active" data-tab="calificaciones">
+                <a href="#calificaciones">Calificaciones</a>
+            </li>
+            -->
+            <li data-tab="asistencia" class="active">
+                <a href="#asistencia">Asistencia</a>
+            </li>
+            <li data-tab="asistencia-rapida">
+                <a href="#asistencia-rapida">Asistencia Rápida</a>
+            </li>
+            <li data-tab="estudiantes">
+                <a href="#estudiantes">Estudiantes</a>
+            </li>
+            {% if current_user.role == 'admin' %}
+            <li data-tab="profesores">
+                <a href="#profesores">Profesores</a>
+            </li>
+            <li data-tab="fechas">
+                <a href="#fechas">Fechas</a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="user-info">
+            <p>{{ current_user.username }}</p>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1 id="page-title">Asistencia</h1>
+        </header>
+
+        <section id="asistencia" class="tab-content active">
+            <div class="card">
+                <h3>Registro de Asistencia</h3>
+                <form action="{{ url_for('add_attendance') }}" method="POST" class="add-form">
+                    <div class="form-row">
+                        <select name="school_date_id" required>
+                            <option value="">Seleccionar Fecha y Turno</option>
+                            {% for date in school_dates %}
+                            <option value="{{ date.id }}">{{ date.date }} - {{ date.shift }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="student_id" required>
+                            <option value="">Seleccionar Estudiante</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="status" required>
+                            <option value="Presente">Presente</option>
+                            <option value="Ausente">Ausente</option>
+                            <option value="Tarde">Tarde</option>
+                        </select>
+                        <input type="text" name="comment" placeholder="Comentario (opcional)">
+                        <button type="submit" class="btn-primary">Registrar</button>
+                    </div>
+                </form>
+
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+                <h4>Historial y Filtros</h4>
+                <form method="GET" action="{{ url_for('dashboard') }}#asistencia" class="search-bar"
+                    style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <input type="hidden" name="tab" value="asistencia">
+                    <input type="date" name="filter_date" value="{{ request.args.get('filter_date', '') }}">
+                    <select name="filter_shift">
+                        <option value="">Todos los turnos</option>
+                        <option value="Mañana (10-12am)" {% if request.args.get('filter_shift')=='Mañana (10-12am)'
+                            %}selected{% endif %}>Mañana</option>
+                        <option value="Tarde 1 (2-4pm)" {% if request.args.get('filter_shift')=='Tarde 1 (2-4pm)'
+                            %}selected{% endif %}>Tarde 1</option>
+                        <option value="Tarde 2 (4-6pm)" {% if request.args.get('filter_shift')=='Tarde 2 (4-6pm)'
+                            %}selected{% endif %}>Tarde 2</option>
+                    </select>
+                    <input type="text" name="filter_student" placeholder="Buscar estudiante..."
+                        value="{{ request.args.get('filter_student', '') }}">
+                    <button type="submit" class="btn-secondary">Filtrar</button>
+                    <!-- Limpiar resets the form by linking to dashboard#asistencia without params -->
+                    <a href="{{ url_for('dashboard', tab='asistencia') }}#asistencia" class="btn-secondary"
+                        style="text-decoration:none; display:flex; align-items:center;">Limpiar</a>
+                    <a href="{{ url_for('export_attendance', **request.args) }}" class="btn-primary"
+                        style="margin-left: auto;">Exportar Excel</a>
+                </form>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Turno</th>
+                                <th>Estudiante</th>
+                                <th>Estado</th>
+                                <th>Comentario</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances %}
+                            <tr>
+                                <td>{{ attendance.school_date.date }}</td>
+                                <td>{{ attendance.school_date.shift }}</td>
+                                <td>{{ attendance.student.name }}</td>
+                                <td>
+                                    <span class="status-badge {{ attendance.status | lower }}">{{ attendance.status
+                                        }}</span>
+                                </td>
+                                <td>{{ attendance.comment or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_attendance', id=attendance.id) }}" class="btn-sm btn-edit"
+                                        style="margin-right: 5px;">Editar</a>
+                                    <a href="{{ url_for('delete_attendance', id=attendance.id) }}"
+                                        class="btn-sm btn-delete"
+                                        onclick="return confirm('¿Eliminar registro?')">Eliminar</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6">No hay registros de asistencia.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="asistencia-rapida"
+            class="tab-content {% if request.args.get('tab') == 'asistencia-rapida' %}active{% endif %}">
+            <div class="card">
+                <div class="rapid-attendance-section">
+                    <h4>Asistencia Rápida (Múltiple)</h4>
+                    <p>Seleccione una fecha para cargar la lista de estudiantes.</p>
+                    <form action="{{ url_for('bulk_add_attendance') }}" method="POST">
+                        <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                            <select id="rapid-date-select" name="school_date_id" required
+                                style="max-width: 300px; padding: 8px;">
+                                <option value="">1. Seleccionar Fecha y Turno</option>
+                                {% for date in school_dates %}
+                                <option value="{{ date.id }}">{{ date.date }} - {{ date.shift }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn-secondary" onclick="loadStudents()"
+                                id="btn-load-students">2.
+                                Cargar Lista</button>
+                            <span id="loading-indicator" style="display:none; color: #666;">Cargando...</span>
+                        </div>
+
+                        <div id="student-list-container"
+                            style="display:none; background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                            <div style="margin-bottom: 15px; font-weight: 500;">3. Asignar estado a los estudiantes:
+                            </div>
+                            <div id="student-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                                <!-- JS renders items here -->
+                            </div>
+
+                            <div style="margin-top: 20px; text-align: right;">
+                                <button type="submit" class="btn-primary"
+                                    style="width: auto; padding-left: 30px; padding-right: 30px;">Guardar Todo</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <script>
+                    async function loadStudents() {
+                        const dateId = document.getElementById('rapid-date-select').value;
+                        if (!dateId) {
+                            alert('Por favor seleccione una fecha primero.');
+                            return;
+                        }
+
+                        const btn = document.getElementById('btn-load-students');
+                        const indicator = document.getElementById('loading-indicator');
+                        const container = document.getElementById('student-list-container');
+                        const grid = document.getElementById('student-grid');
+
+                        btn.disabled = true;
+                        indicator.style.display = 'inline';
+
+                        try {
+                            const response = await fetch(`/api/attendance_status/${dateId}`);
+                            if (!response.ok) throw new Error('Error de red');
+
+                            const data = await response.json();
+
+                            grid.innerHTML = '';
+                            data.students.forEach(s => {
+                                const div = document.createElement('div');
+                                div.style.background = 'white';
+                                div.style.padding = '10px';
+                                div.style.borderRadius = '6px';
+                                div.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                                div.style.border = '1px solid #e5e7eb';
+
+                                div.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 8px; color: #333;">${s.name}</div>
+                        <input type="hidden" name="student_ids" value="${s.id}">
+                        <select name="status_${s.id}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">-- Sin Registro --</option>
+                            <option value="Presente" ${s.status === 'Presente' ? 'selected' : ''}>Presente</option>
+                            <option value="Ausente" ${s.status === 'Ausente' ? 'selected' : ''}>Ausente</option>
+                            <option value="Tarde" ${s.status === 'Tarde' ? 'selected' : ''}>Tarde</option>
+                        </select>
+                    `;
+                                grid.appendChild(div);
+                            });
+
+                            container.style.display = 'block';
+
+                        } catch (error) {
+                            alert('Error al cargar estudiantes: ' + error.message);
+                        } finally {
+                            btn.disabled = false;
+                            indicator.style.display = 'none';
+                        }
+                    }
+                </script>
+
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+                <h4>Historial General</h4>
+                <!-- Duplicate table for visibility in this tab too -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Turno</th>
+                                <th>Estudiante</th>
+                                <th>Estado</th>
+                                <th>Comentario</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances %}
+                            <tr>
+                                <td>{{ attendance.school_date.date }}</td>
+                                <td>{{ attendance.school_date.shift }}</td>
+                                <td>{{ attendance.student.name }}</td>
+                                <td>
+                                    <span class="status-badge {{ attendance.status | lower }}">{{ attendance.status
+                                        }}</span>
+                                </td>
+                                <td>{{ attendance.comment or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_attendance', id=attendance.id) }}" class="btn-sm btn-edit"
+                                        style="margin-right: 5px;">Editar</a>
+                                    <a href="{{ url_for('delete_attendance', id=attendance.id) }}"
+                                        class="btn-sm btn-delete"
+                                        onclick="return confirm('¿Eliminar registro?')">Eliminar</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6">No hay registros de asistencia.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="estudiantes" class="tab-content">
+            <div class="card">
+                <h3>Directorio de Estudiantes</h3>
+
+                <form action="{{ url_for('add_student') }}" method="POST" class="add-form">
+                    <div class="form-row">
+                        <input type="text" name="name" placeholder="Nombre completo" required>
+                        <input type="email" name="email" placeholder="Correo electrónico">
+                        <input type="text" name="guardian_name" placeholder="Nombre Acudiente">
+                        <input type="text" name="guardian_phone" placeholder="Celular Acudiente">
+                        <button type="submit" class="btn-primary">Agregar Estudiante</button>
+                    </div>
+
+                </form>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Acudiente</th>
+                                <th>Celular</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.email }}</td>
+                                <td>{{ student.guardian_name }}</td>
+                                <td>{{ student.guardian_phone }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_student', id=student.id) }}" class="btn-sm btn-edit"
+                                        style="margin-right: 5px;">Editar</a>
+                                    <a href="{{ url_for('delete_student', id=student.id) }}" class="btn-sm btn-delete"
+                                        onclick="return confirm('¿Estás seguro?')">Eliminar</a>
+                                </td>
+
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3">No hay estudiantes registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        {% if current_user.role == 'admin' %}
+        <section id="profesores" class="tab-content">
+            <div class="card">
+                <h3>Personal Docente</h3>
+
+                <form action="{{ url_for('add_teacher') }}" method="POST" class="add-form">
+                    <div class="form-row">
+                        <input type="text" name="name" placeholder="Nombre completo" required>
+                        <input type="email" name="email" placeholder="Correo electrónico" required>
+                        <input type="text" name="phone" placeholder="Celular" required>
+                        <input type="password" name="password" placeholder="Contraseña" required>
+                        <button type="submit" class="btn-primary">Agregar Profesor</button>
+                    </div>
+                </form>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Celular</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for teacher in teachers %}
+                            <tr>
+                                <td>{{ teacher.name }}</td>
+                                <td>{{ teacher.email }}</td>
+                                <td>{{ teacher.phone or 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_teacher', id=teacher.id) }}" class="btn-sm btn-edit"
+                                        style="margin-right: 5px;">Editar</a>
+                                    <a href="{{ url_for('delete_teacher', id=teacher.id) }}" class="btn-sm btn-delete"
+                                        onclick="return confirm('¿Estás seguro?')">Eliminar</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4">No hay profesores registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="fechas" class="tab-content">
+            <div class="card">
+                <h3>Gestión de Fechas y Turnos</h3>
+
+                <form action="{{ url_for('add_school_date') }}" method="POST" class="add-form">
+                    <div class="form-row">
+                        <input type="date" name="date" required>
+                        <select name="shift" required>
+                            <option value="">Seleccionar Turno</option>
+                            <option value="Mañana (10-12am)">Mañana (10-12am)</option>
+                            <option value="Tarde 1 (2-4pm)">Tarde 1 (2-4pm)</option>
+                            <option value="Tarde 2 (4-6pm)">Tarde 2 (4-6pm)</option>
+                        </select>
+                        <button type="submit" class="btn-primary">Agregar Fecha</button>
+                    </div>
+                </form>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Turno</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date in school_dates %}
+                            <tr>
+                                <td>{{ date.date }}</td>
+                                <td>{{ date.shift }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_school_date', id=date.id) }}" class="btn-sm btn-edit"
+                                        style="margin-right: 5px;">Editar</a>
+                                    <a href="{{ url_for('delete_school_date', id=date.id) }}" class="btn-sm btn-delete"
+                                        onclick="return confirm('¿Estás seguro?')">Eliminar</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3">No hay fechas registradas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <div class="card">
+        <h2>Editar Asistencia</h2>
+        <p><strong>Fecha:</strong> {{ attendance.school_date.date }} - {{ attendance.school_date.shift }}</p>
+        <p><strong>Estudiante:</strong> {{ attendance.student.name }}</p>
+
+        <form method="POST">
+            <div class="form-group">
+                <label>Estado</label>
+                <select name="status" class="form-control" required>
+                    <option value="Presente" {% if attendance.status=='Presente' %}selected{% endif %}>Presente</option>
+                    <option value="Ausente" {% if attendance.status=='Ausente' %}selected{% endif %}>Ausente</option>
+                    <option value="Tarde" {% if attendance.status=='Tarde' %}selected{% endif %}>Tarde</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Comentario</label>
+                <input type="text" name="comment" class="form-control" value="{{ attendance.comment or '' }}">
+            </div>
+
+            <button type="submit" class="btn-primary">Guardar Cambios</button>
+            <a href="{{ url_for('dashboard') }}#asistencia" class="btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
