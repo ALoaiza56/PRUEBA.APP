@@ -32,10 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
             const tabId = link.getAttribute('data-tab');
-            history.replaceState(null, null, `#${tabId}`);
-            activateTab(tabId);
+            if (tabId) {
+                e.preventDefault();
+                history.replaceState(null, null, `#${tabId}`);
+                activateTab(tabId);
+            }
         });
     });
 });

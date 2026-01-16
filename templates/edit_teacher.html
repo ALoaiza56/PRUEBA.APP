@@ -13,8 +13,28 @@
             <h2>SchoolApp</h2>
         </div>
         <ul class="nav-links">
-            <li><a href="{{ url_for('dashboard') }}#profesores">Volver al Dashboard</a></li>
+            <li>
+                <a href="{{ url_for('dashboard') }}#asistencia">Asistencia</a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard') }}#asistencia-rapida">Asistencia Rápida</a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard') }}#estudiantes">Estudiantes</a>
+            </li>
+            {% if current_user.role == 'admin' %}
+            <li class="active">
+                <a href="{{ url_for('dashboard') }}#profesores">Profesores</a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard') }}#fechas">Fechas</a>
+            </li>
+            {% endif %}
         </ul>
+        <div class="user-info">
+            <p>{{ current_user.username }}</p>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Cerrar Sesión</a>
+        </div>
     </nav>
 
     <main class="main-content">
