@@ -1,18 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db, User, Student, Teacher, Grade, Attendance
 from database import db, User, Student, Teacher, Grade, Attendance, SchoolDate
 from datetime import datetime
 import os
 import csv
 from io import StringIO
-from flask import Response, make_response
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here' # In production, use environment variable
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///school.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///school.db')
+if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -463,13 +463,10 @@ def delete_attendance(id):
     flash('Registro de asistencia eliminado')
     return redirect(url_for('dashboard') + '#asistencia')
 
-# Helper function to create DB
-def create_db():
-    with app.app_context():
-        db.create_all()
+# Create tables and admin user
+with app.app_context():
+    db.create_all()
+    create_admin_if_not_exists()
 
 if __name__ == '__main__':
-    create_db()
-    with app.app_context():
-        create_admin_if_not_exists()
     app.run(debug=True)
